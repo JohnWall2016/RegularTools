@@ -1,0 +1,7 @@
+.bloop
+.metals
+.vscode
+.idea
+.idea_modules
+out
+tools/resources/application.properties
