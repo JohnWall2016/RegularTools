@@ -37,6 +37,8 @@ object tools extends CustomModule {
       ivy"org.scala-lang:scala-compiler:2.13.3",
       ivy"org.zeroturnaround:zt-zip:1.14",
       ivy"com.mpatric:mp3agic:0.9.1",
+      ivy"com.lihaoyi::os-lib:0.7.8",
+      ivy"com.lihaoyi::requests:0.6.5",
     )
     
   trait BaseModule extends CustomModule {
@@ -45,6 +47,7 @@ object tools extends CustomModule {
 
   object app extends CustomModule {
     object mp3tool extends BaseModule
+    object download extends BaseModule
   }
 
   object test extends Tests {
