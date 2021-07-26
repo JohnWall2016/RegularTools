@@ -56,6 +56,7 @@ class Download(args: collection.Seq[String]) extends Command(args) {
 
           try {
             downloadFile(fileName)
+            nextRecord()
           } catch {
             case e: SocketTimeoutException =>
               if (retryTimes <= retry()) {
