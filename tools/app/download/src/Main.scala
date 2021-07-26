@@ -16,6 +16,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
 
     val abc = opt[String](descr = "开始字母", default = Some("A"))
 
+    val retry = opt[Int](descr = "容错次数", default = Some(3))
+
     def execute(): Unit = {
       val session = requests.Session()
 
@@ -33,16 +35,28 @@ class Download(args: collection.Seq[String]) extends Command(args) {
         )
       }
 
-      if (startIndex() <= endIndex()) {
-        List("AM.mp3", "BM.mp3", "CM.mp3")
-          .dropWhile(_ != abc() + "M.mp3")
-          .foreach(suffix => downloadFile(f"20Y${startIndex()}%03d$suffix"))
+      var retryTimes = 0
+      while (true) {
+        try {
+          if (startIndex() <= endIndex()) {
+            List("AM.mp3", "BM.mp3", "CM.mp3")
+              .dropWhile(_ != abc() + "M.mp3")
+              .foreach(suffix => downloadFile(f"20Y${startIndex()}%03d$suffix"))
+          }
+          for {
+            index <- (startIndex() + 1) to endIndex()
+            suffix <- List("AM.mp3", "BM.mp3", "CM.mp3")
+          } downloadFile(f"20Y$index%03d$suffix")
+        } catch {
+          case e: Exception =>
+            if (retryTimes <= retry()) {
+              println(e)
+              retryTimes += 1
+            } else {
+              throw e
+            }
+        }
       }
-
-      for {
-        index <- (startIndex() + 1) to endIndex()
-        suffix <- List("AM.mp3", "BM.mp3", "CM.mp3")
-      } downloadFile(f"20Y$index%03d$suffix")
     }
   }
 
