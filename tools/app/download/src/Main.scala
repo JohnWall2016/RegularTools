@@ -17,7 +17,7 @@ class Download(args: collection.Seq[String]) extends Command(args) {
 
     val side = opt[String](descr = "开始字母", default = Some("A"))
 
-    val retry = opt[Int](descr = "容错次数", default = Some(3))
+    val retry = opt[Int](descr = "容错次数", default = Some(6))
 
     val sides = Seq("A", "B", "C")
 
