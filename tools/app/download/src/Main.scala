@@ -1,5 +1,6 @@
 import base.command._
 import java.nio.file.Path
+import java.net.SocketTimeoutException
 
 object Main {
   def main(args: Array[String]) = new Download(args).runCommand()
@@ -14,9 +15,11 @@ class Download(args: collection.Seq[String]) extends Command(args) {
 
     val endIndex = opt[Int](descr = "终止下载索引", default = Some(137))
 
-    val abc = opt[String](descr = "开始字母", default = Some("A"))
+    val side = opt[String](descr = "开始字母", default = Some("A"))
 
     val retry = opt[Int](descr = "容错次数", default = Some(3))
+
+    val sides = Seq("A", "B", "C")
 
     def execute(): Unit = {
       val session = requests.Session()
@@ -36,25 +39,56 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       }
 
       var retryTimes = 0
-      while (true) {
-        try {
-          if (startIndex() <= endIndex()) {
-            List("AM.mp3", "BM.mp3", "CM.mp3")
-              .dropWhile(_ != abc() + "M.mp3")
-              .foreach(suffix => downloadFile(f"20Y${startIndex()}%03d$suffix"))
+
+      case class Record(index: Int, side: String)
+
+      var currentRecord = Record(startIndex(), side())
+
+      var continue = true
+      while (continue) {
+        val sideIndex = sides.indexOf(currentRecord.side)
+
+        if (currentRecord.index > endIndex() || sideIndex == -1) {
+          continue = false
+        } else {
+          val fileName =
+            f"20Y${currentRecord.index}%03d${currentRecord.side}M.mp3"
+
+          try {
+            downloadFile(fileName)
+          } catch {
+            case e: SocketTimeoutException =>
+              if (retryTimes <= retry()) {
+                println(e)
+                retryTimes += 1
+              } else {
+                throw e
+              }
+            case e: requests.RequestFailedException =>
+              if (retryTimes <= retry()) {
+                println(e)
+                retryTimes += 1
+                nextRecord()
+              } else {
+                throw e
+              }
           }
-          for {
-            index <- (startIndex() + 1) to endIndex()
-            suffix <- List("AM.mp3", "BM.mp3", "CM.mp3")
-          } downloadFile(f"20Y$index%03d$suffix")
-        } catch {
-          case e: Exception =>
-            if (retryTimes <= retry()) {
-              println(e)
-              retryTimes += 1
-            } else {
-              throw e
-            }
+
+          def nextRecord() = {
+            val newSideIndex = sideIndex + 1
+            currentRecord = Record(
+              if (newSideIndex == sides.size) {
+                currentRecord.index + 1
+              } else {
+                currentRecord.index
+              },
+              if (newSideIndex == sides.size) {
+                sides(0)
+              } else {
+                sides(newSideIndex)
+              }
+            )
+          }
         }
       }
     }
