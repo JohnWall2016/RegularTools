@@ -9,6 +9,47 @@ object Main {
 class Download(args: collection.Seq[String]) extends Command(args) {
   banner("下载程序")
 
+  def fetch(urls: Iterable[String], outDir: String, retry: Int = 6) = {
+    val session = requests.Session()
+    def download(url: String, retry: Int): Unit = {
+      try {
+        println(s"下载 $url")
+        os.write(
+          os.Path(outDir) / url.split("/").last,
+          session.get(
+            url,
+            proxy = ("127.0.0.1", 1080)
+          )
+        )
+      } catch {
+        case e: SocketTimeoutException =>
+          if (retry > 0) {
+            println(e)
+            download(url, retry - 1)
+          } else {
+            throw e
+          }
+      }
+    }
+
+    var retryTimes = 0
+    val iter = urls.iterator
+    while (iter.hasNext) {
+      val url = iter.next()
+      try {
+        download(url, retry)
+      } catch {
+        case e: requests.RequestFailedException =>
+          if (retryTimes <= retry) {
+            println(e)
+            retryTimes += 1
+          } else {
+            throw e
+          }
+      }
+    }
+  }
+
   val chengWeiShi = new Subcommand("chengWeiShi") with InputDir {
 
     val startIndex = trailArg[Int](descr = "开始下载索引")
@@ -95,5 +136,29 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     }
   }
 
+  val weiShi30Song = new Subcommand("weiShi30Song") with InputDir {
+    val startIndex = trailArg[Int](descr = "开始下载索引")
+
+    val endIndex = opt[Int](descr = "终止下载索引", default = Some(43))
+
+    val baseUrl = """http://ftp2.budaedu.org/newGhosa/C007/T034Z/audio-low"""
+
+    def execute(): Unit = {
+      val urls = (for (index <- (startIndex() to endIndex())) yield {
+        if (index < 30) {
+          List(
+            f"$baseUrl/34Z0$index%02dAM.mp3",
+            f"$baseUrl/34Z0$index%02dBM.mp3"
+          )
+        } else {
+          List(f"$baseUrl/34Z0$index%02dP.mp3")
+        }
+      }).flatMap(_.iterator)
+
+      fetch(urls, inputDir())
+    }
+  }
+
   addSubCommand(chengWeiShi)
+  addSubCommand(weiShi30Song)
 }
