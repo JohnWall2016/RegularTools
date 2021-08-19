@@ -99,6 +99,7 @@ class Mp3Tool(args: collection.Seq[String]) extends Command(args) {
     val replace = trailArg[String](descr = "替换字符")
 
     def execute(): Unit = {
+      println(s"${postfix()} => ${replace()}")
       import base.text.String.StringOps
 
       val dir = Path.of(inputDir())

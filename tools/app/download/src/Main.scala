@@ -159,6 +159,29 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     }
   }
 
+  val weiShi30Song2 = new Subcommand("weiShi30Song2") with InputDir {
+    val startIndex =
+      trailArg[Int](descr = "开始下载索引", required = false, default = Some(1))
+
+    val endIndex =
+      trailArg[Int](descr = "终止下载索引", required = false, default = Some(14))
+    //val endIndex = opt[Int](descr = "终止下载索引", default = Some(14))
+
+    val baseUrl = """http://ftp.budaedu.org/ghosa/C007/T0952/audio-low"""
+
+    def execute(): Unit = {
+      val urls = (for (index <- (startIndex() to endIndex())) yield {
+        List(
+          f"$baseUrl/9520$index%02dAM.mp3",
+          f"$baseUrl/9520$index%02dBM.mp3"
+        )
+      }).flatMap(_.iterator)
+
+      fetch(urls, inputDir())
+    }
+  }
+
   addSubCommand(chengWeiShi)
   addSubCommand(weiShi30Song)
+  addSubCommand(weiShi30Song2)
 }
