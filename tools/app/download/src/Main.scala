@@ -181,7 +181,45 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     }
   }
 
+  val weiShi30Song3 = new Subcommand("weiShi30Song3") with InputDir {
+    val startIndex =
+      trailArg[Int](descr = "开始下载索引", required = false, default = Some(1))
+
+    val endIndex =
+      trailArg[Int](descr = "终止下载索引", required = false, default = Some(118))
+
+    val baseUrl = """http://ftp2.budaedu.org/newGhosa/C007/T027X/audio-low"""
+
+    def execute(): Unit = {
+      val urls = for (index <- (startIndex() to endIndex())) yield {
+          f"$baseUrl/27X$index%03dP.mp3"
+      }
+
+      fetch(urls, inputDir())
+    }
+  }
+
+  val ruPuShaXinLun = new Subcommand("ruPuShaXinLun") with InputDir {
+    val startIndex =
+      trailArg[Int](descr = "开始下载索引", required = false, default = Some(1))
+
+    val endIndex =
+      trailArg[Int](descr = "终止下载索引", required = false, default = Some(91))
+
+    val baseUrl = """http://ftp4.budaedu.org/ghosa4/C025/TI001359/audio-low"""
+
+    def execute(): Unit = {
+      val urls = for (index <- (startIndex() to endIndex())) yield {
+          f"$baseUrl/TI001359-$index%05d-P.mp3"
+      }
+
+      fetch(urls, inputDir())
+    }
+  }
+
   addSubCommand(chengWeiShi)
   addSubCommand(weiShi30Song)
   addSubCommand(weiShi30Song2)
+  addSubCommand(weiShi30Song3)
+  addSubCommand(ruPuShaXinLun)
 }
