@@ -9,17 +9,26 @@ object Main {
 class Download(args: collection.Seq[String]) extends Command(args) {
   banner("下载程序")
 
-  def fetch(urls: Iterable[String], outDir: String, retry: Int = 6) = {
+  def fetch(
+      urls: Iterable[String],
+      outDir: String,
+      retry: Int = 6,
+      proxy: Option[(String, Int)] = None
+  ) = {
     val session = requests.Session()
     def download(url: String, retry: Int): Unit = {
       try {
         println(s"下载 $url")
         os.write(
           os.Path(outDir) / url.split("/").last,
-          session.get(
-            url,
-            proxy = ("127.0.0.1", 1080)
-          )
+          if (proxy.isEmpty) {
+            session.get(url)
+          } else {
+            session.get(
+              url,
+              proxy = proxy.get
+            )
+          }
         )
       } catch {
         case e: SocketTimeoutException =>
@@ -136,84 +145,121 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     }
   }
 
-  val weiShi30Song = new Subcommand("weiShi30Song") with InputDir {
-    val startIndex = trailArg[Int](descr = "开始下载索引")
+  def budaeduDownload(name: String, baseUrl: String, start: Int, end: Int)(
+      getUrls: (String, Int) => List[String]
+  ) = {
+    new Subcommand(name) with InputDir {
+      val startIndex =
+        trailArg[Int](descr = "开始下载索引", required = false, default = Some(start))
 
-    val endIndex = opt[Int](descr = "终止下载索引", default = Some(43))
+      val endIndex =
+        trailArg[Int](descr = "终止下载索引", required = false, default = Some(end))
 
-    val baseUrl = """http://ftp2.budaedu.org/newGhosa/C007/T034Z/audio-low"""
+      def execute(): Unit = {
+        val urls = (for (index <- (startIndex() to endIndex())) yield {
+          getUrls(baseUrl, index)
+        }).flatMap(_.iterator)
 
-    def execute(): Unit = {
-      val urls = (for (index <- (startIndex() to endIndex())) yield {
-        if (index < 30) {
+        fetch(urls, inputDir(), proxy = Some(("127.0.0.1", 1080)))
+      }
+    }
+  }
+
+  val weiShi30Song = budaeduDownload(
+    "weiShi30Song",
+    """"http://ftp2.budaedu.org/newGhosa/C007/T034Z/audio-low"""",
+    1,
+    43
+  ) { (baseUrl, index) =>
+    if (index < 30) {
+      List(
+        f"$baseUrl/34Z0$index%02dAM.mp3",
+        f"$baseUrl/34Z0$index%02dBM.mp3"
+      )
+    } else {
+      List(f"$baseUrl/34Z0$index%02dP.mp3")
+    }
+  }
+
+  val weiShi30Song2 = budaeduDownload(
+    "weiShi30Song2",
+    """http://ftp.budaedu.org/ghosa/C007/T0952/audio-low""",
+    1,
+    14
+  ) { (baseUrl, index) =>
+    List(
+      f"$baseUrl/9520$index%02dAM.mp3",
+      f"$baseUrl/9520$index%02dBM.mp3"
+    )
+  }
+
+  val weiShi30Song3 = budaeduDownload(
+    "weiShi30Song3",
+    """http://ftp2.budaedu.org/newGhosa/C007/T027X/audio-low""",
+    1,
+    118
+  ) { (baseUrl, index) =>
+    List(
+      f"$baseUrl/27X$index%03dP.mp3"
+    )
+  }
+
+  val ruPuShaXinLun = budaeduDownload(
+    "ruPuShaXinLun",
+    """http://ftp4.budaedu.org/ghosa4/C025/TI001359/audio-low""",
+    1,
+    91
+  ) { (baseUrl, index) =>
+    List(
+      f"$baseUrl/TI001359-$index%05d-P.mp3"
+    )
+  }
+
+  val faXiangZong1 = budaeduDownload(
+    "faXiangZong1",
+    """http://ftp3.budaedu.org/ghosa3/C038/T043S/audio-low""",
+    1,
+    11
+  ) { (baseUrl, index) =>
+    List(
+      f"$baseUrl/43S$index%03dP.mp3"
+    )
+  }
+
+  val weiShiRengShi = budaeduDownload(
+    "weiShiRengShi", // 唯識的認識與修證哲學─境行果[T032D]
+    """http://ftp2.budaedu.org/newGhosa/C007/T032D/audio-low""",
+    1,
+    19
+  ) { (baseUrl, index) =>
+    List(
+      f"$baseUrl/32D$index%03dAM.mp3",
+      f"$baseUrl/32D$index%03dBM.mp3"
+    )
+  }
+
+  def fayunDownload(name: String, file: String, start: Int, end: Int) = {
+    new Subcommand(name) with InputDir {
+      val startIndex =
+        trailArg[Int](descr = "开始下载索引", required = false, default = Some(start))
+
+      val endIndex =
+        trailArg[Int](descr = "终止下载索引", required = false, default = Some(end))
+
+      val baseUrl =
+        s"""https://fayun.org/public/php/download.php?file=media/釋論/瑜伽師地論・本地分/$file/audio/瑜伽師地論-"""
+
+      def execute(): Unit = {
+        val urls = (for (index <- (startIndex() to endIndex())) yield {
           List(
-            f"$baseUrl/34Z0$index%02dAM.mp3",
-            f"$baseUrl/34Z0$index%02dBM.mp3"
+            f"$baseUrl$index%03da.m4a",
+            f"$baseUrl$index%03db.m4a",
+            f"$baseUrl$index%03dc.m4a"
           )
-        } else {
-          List(f"$baseUrl/34Z0$index%02dP.mp3")
-        }
-      }).flatMap(_.iterator)
+        }).flatMap(_.iterator)
 
-      fetch(urls, inputDir())
-    }
-  }
-
-  val weiShi30Song2 = new Subcommand("weiShi30Song2") with InputDir {
-    val startIndex =
-      trailArg[Int](descr = "开始下载索引", required = false, default = Some(1))
-
-    val endIndex =
-      trailArg[Int](descr = "终止下载索引", required = false, default = Some(14))
-    //val endIndex = opt[Int](descr = "终止下载索引", default = Some(14))
-
-    val baseUrl = """http://ftp.budaedu.org/ghosa/C007/T0952/audio-low"""
-
-    def execute(): Unit = {
-      val urls = (for (index <- (startIndex() to endIndex())) yield {
-        List(
-          f"$baseUrl/9520$index%02dAM.mp3",
-          f"$baseUrl/9520$index%02dBM.mp3"
-        )
-      }).flatMap(_.iterator)
-
-      fetch(urls, inputDir())
-    }
-  }
-
-  val weiShi30Song3 = new Subcommand("weiShi30Song3") with InputDir {
-    val startIndex =
-      trailArg[Int](descr = "开始下载索引", required = false, default = Some(1))
-
-    val endIndex =
-      trailArg[Int](descr = "终止下载索引", required = false, default = Some(118))
-
-    val baseUrl = """http://ftp2.budaedu.org/newGhosa/C007/T027X/audio-low"""
-
-    def execute(): Unit = {
-      val urls = for (index <- (startIndex() to endIndex())) yield {
-          f"$baseUrl/27X$index%03dP.mp3"
+        fetch(urls, inputDir(), proxy = None)
       }
-
-      fetch(urls, inputDir())
-    }
-  }
-
-  val ruPuShaXinLun = new Subcommand("ruPuShaXinLun") with InputDir {
-    val startIndex =
-      trailArg[Int](descr = "开始下载索引", required = false, default = Some(1))
-
-    val endIndex =
-      trailArg[Int](descr = "终止下载索引", required = false, default = Some(91))
-
-    val baseUrl = """http://ftp4.budaedu.org/ghosa4/C025/TI001359/audio-low"""
-
-    def execute(): Unit = {
-      val urls = for (index <- (startIndex() to endIndex())) yield {
-          f"$baseUrl/TI001359-$index%05d-P.mp3"
-      }
-
-      fetch(urls, inputDir())
     }
   }
 
@@ -222,4 +268,9 @@ class Download(args: collection.Seq[String]) extends Command(args) {
   addSubCommand(weiShi30Song2)
   addSubCommand(weiShi30Song3)
   addSubCommand(ruPuShaXinLun)
+  addSubCommand(faXiangZong1)
+  addSubCommand(weiShiRengShi)
+
+  addSubCommand(fayunDownload("yuQieShiDiLun1", "初發論端", 1, 7))
+  addSubCommand(fayunDownload("yuQieShiDiLun2", "卷01", 8, 21))
 }
