@@ -247,9 +247,9 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       end: Int,
       getUrl: (String, Int) => List[String] = { (baseUrl, index) =>
         List(
-          f"$baseUrl$index%03da.m4a",
-          f"$baseUrl$index%03db.m4a",
-          f"$baseUrl$index%03dc.m4a"
+          f"${baseUrl}/瑜伽師地論-$index%03da.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03db.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dc.m4a"
         )
       }
   ) = {
@@ -269,7 +269,7 @@ class Download(args: collection.Seq[String]) extends Command(args) {
         trailArg[Int](descr = "终止下载索引", required = false, default = Some(end))
 
       val baseUrl =
-        s"""https://fayun.org/public/php/download.php?file=media/釋論/瑜伽師地論・本地分/$part/audio/瑜伽師地論-"""
+        s"""https://fayun.org/public/php/download.php?file=media/釋論/瑜伽師地論・本地分/$part/audio"""
 
       def execute(): Unit = {
         val urls = (for (index <- (startIndex() to endIndex())) yield {
@@ -339,8 +339,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       47,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"$baseUrl/瑜伽師地論-$index%03d.m4a",
+          f"$baseUrl/瑜伽師地論-$index%03dQA.m4a",
         )
       }
     )
@@ -354,8 +354,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       57,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
         )
       }
     )
@@ -369,8 +369,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       66,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
         )
       }
     )
@@ -384,8 +384,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       74,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
         )
       }
     )
@@ -399,8 +399,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       84,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
         )
       }
     )
@@ -414,8 +414,8 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       98,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
         )
       }
     )
@@ -429,8 +429,38 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       112,
       (baseUrl, index) => {
         List(
-          f"$baseUrl$index%03d.m4a",
-          f"$baseUrl$index%03dQA.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
+          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun12",
+      "12.卷11",
+      "卷11",
+      113,
+      129,
+      (baseUrl, index) => {
+        List(
+          f"${baseUrl}/T$index%03d.mp3",
+          f"${baseUrl}/T$index%03dQ.mp3",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun13",
+      "13.卷12至13-1",
+      "卷12至13-1",
+      130,
+      155,
+      (baseUrl, index) => {
+        List(
+          f"${baseUrl}/T$index%03d.mp3",
+          f"${baseUrl}/T$index%03dQ.mp3",
         )
       }
     )
