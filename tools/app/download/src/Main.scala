@@ -1,6 +1,7 @@
 import base.command._
 import java.nio.file.Path
 import java.net.SocketTimeoutException
+import java.nio.file.Files
 
 object Main {
   def main(args: Array[String]) = new Download(args).runCommand()
@@ -18,7 +19,7 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     val session = requests.Session()
     def download(url: String, retry: Int): Unit = {
       try {
-        println(s"下载 $url")
+        println(s"下载 $url -> $outDir")
         os.write(
           os.Path(outDir) / url.split("/").last,
           if (proxy.isEmpty) {
@@ -238,8 +239,29 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     )
   }
 
-  def fayunDownload(name: String, file: String, start: Int, end: Int) = {
-    new Subcommand(name) with InputDir {
+  def yuQieShiDiLunDownload(
+      name: String,
+      subdir: String,
+      part: String,
+      start: Int,
+      end: Int,
+      getUrl: (String, Int) => List[String] = { (baseUrl, index) =>
+        List(
+          f"$baseUrl$index%03da.m4a",
+          f"$baseUrl$index%03db.m4a",
+          f"$baseUrl$index%03dc.m4a"
+        )
+      }
+  ) = {
+    val rootDir = """/Users/wangjiong/Documents/瑜伽師地論_玅境長老"""
+
+    new Subcommand(name) {
+      val inputDir = trailArg[String](
+        descr = "文件导入路径",
+        required = false,
+        default = Some(s"""$rootDir/$subdir""")
+      )
+
       val startIndex =
         trailArg[Int](descr = "开始下载索引", required = false, default = Some(start))
 
@@ -247,18 +269,19 @@ class Download(args: collection.Seq[String]) extends Command(args) {
         trailArg[Int](descr = "终止下载索引", required = false, default = Some(end))
 
       val baseUrl =
-        s"""https://fayun.org/public/php/download.php?file=media/釋論/瑜伽師地論・本地分/$file/audio/瑜伽師地論-"""
+        s"""https://fayun.org/public/php/download.php?file=media/釋論/瑜伽師地論・本地分/$part/audio/瑜伽師地論-"""
 
       def execute(): Unit = {
         val urls = (for (index <- (startIndex() to endIndex())) yield {
-          List(
-            f"$baseUrl$index%03da.m4a",
-            f"$baseUrl$index%03db.m4a",
-            f"$baseUrl$index%03dc.m4a"
-          )
+          getUrl(baseUrl, index)
         }).flatMap(_.iterator)
 
-        fetch(urls, inputDir(), proxy = None)
+        val outputPath = Path.of(inputDir())
+        if (!Files.exists(outputPath)) {
+          Files.createDirectories(outputPath)
+        }
+
+        fetch(urls, outputPath.toString(), proxy = None)
       }
     }
   }
@@ -271,6 +294,130 @@ class Download(args: collection.Seq[String]) extends Command(args) {
   addSubCommand(faXiangZong1)
   addSubCommand(weiShiRengShi)
 
-  addSubCommand(fayunDownload("yuQieShiDiLun1", "初發論端", 1, 7))
-  addSubCommand(fayunDownload("yuQieShiDiLun2", "卷01", 8, 21))
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun1",
+      "1.初發論端",
+      "初發論端",
+      1,
+      7
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun2",
+      "2.卷01",
+      "卷01",
+      8,
+      21
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun3",
+      "3.卷02",
+      "卷02",
+      22,
+      34
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun4",
+      "4.卷03",
+      "卷03",
+      35,
+      42
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun5",
+      "5.卷04",
+      "卷04",
+      43,
+      47,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun6",
+      "6.卷05",
+      "卷05",
+      48,
+      57,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun7",
+      "7.卷06",
+      "卷06",
+      58,
+      66,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun8",
+      "8.卷07",
+      "卷07",
+      67,
+      74,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun9",
+      "9.卷08",
+      "卷08",
+      75,
+      84,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun10",
+      "10.卷09",
+      "卷09",
+      85,
+      98,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
 }
