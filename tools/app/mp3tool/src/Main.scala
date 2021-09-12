@@ -23,9 +23,17 @@ class Mp3Tool(args: collection.Seq[String]) extends Command(args) {
 
     val artist = trailArg[String](descr = "艺人名")
 
+    val titleWithFileName = opt[String](
+      descr = "用此字符串加文件名替换标题",
+      short = 't',
+      required = false,
+      default = None
+    )
+
     def execute(): Unit = {
       Files.list(Path.of(inputDir())).forEach { file =>
-        if (file.getFileName().toString().toLowerCase().endsWith(".mp3")) {
+        val fileName = file.getFileName().toString()
+        if (fileName.toLowerCase().endsWith(".mp3")) {
           println(s"修改 $file")
           val mp3 = new Mp3File(file)
           val tag = if (mp3.hasId3v2Tag()) {
@@ -34,6 +42,10 @@ class Mp3Tool(args: collection.Seq[String]) extends Command(args) {
             val tag = new ID3v24Tag
             mp3.setId3v2Tag(tag)
             tag
+          }
+          if (titleWithFileName.isDefined) {
+            val name = fileName.substring(0, fileName.length() - 4)
+            tag.setTitle(s"${titleWithFileName()}${name}")
           }
           tag.setAlbum(album())
           tag.setArtist(artist())
