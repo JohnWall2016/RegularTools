@@ -420,4 +420,19 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       }
     )
   )
+  addSubCommand(
+    yuQieShiDiLunDownload(
+      "yuQieShiDiLun11",
+      "11.卷10",
+      "卷10",
+      99,
+      112,
+      (baseUrl, index) => {
+        List(
+          f"$baseUrl$index%03d.m4a",
+          f"$baseUrl$index%03dQA.m4a",
+        )
+      }
+    )
+  )
 }
