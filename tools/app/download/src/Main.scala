@@ -1,10 +1,11 @@
-import base.command._
-import java.nio.file.Path
 import java.net.SocketTimeoutException
-import java.nio.file.Files
-import java.net.URLEncoder
 import java.net.URI
+import java.net.URLEncoder
+import java.nio.file.Files
+import java.nio.file.Path
 import javax.net.ssl.SSLException
+
+import base.command._
 
 object Main {
   def main(args: Array[String]) = new Download(args).runCommand()
