@@ -2,6 +2,9 @@ import base.command._
 import java.nio.file.Path
 import java.net.SocketTimeoutException
 import java.nio.file.Files
+import java.net.URLEncoder
+import java.net.URI
+import javax.net.ssl.SSLException
 
 object Main {
   def main(args: Array[String]) = new Download(args).runCommand()
@@ -15,13 +18,27 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       outDir: String,
       retry: Int = 6,
       proxy: Option[(String, Int)] = None
-  ) = {
+  ): Unit = {
+    fetchByUrlAndNames(
+      urls.map(it => (it, it.split("/").last)),
+      outDir,
+      retry,
+      proxy
+    )
+  }
+
+  def fetchByUrlAndNames(
+      urlAndNames: Iterable[(String, String)],
+      outDir: String,
+      retry: Int = 6,
+      proxy: Option[(String, Int)] = None
+  ): Unit = {
     val session = requests.Session()
-    def download(url: String, retry: Int): Unit = {
+    def download(url: String, name: String, retry: Int): Unit = {
       try {
         println(s"下载 $url -> $outDir")
         os.write(
-          os.Path(outDir) / url.split("/").last,
+          os.Path(outDir) / name,
           if (proxy.isEmpty) {
             session.get(url)
           } else {
@@ -32,10 +49,10 @@ class Download(args: collection.Seq[String]) extends Command(args) {
           }
         )
       } catch {
-        case e: SocketTimeoutException =>
+        case e @ (_: SocketTimeoutException | _: SSLException) =>
           if (retry > 0) {
             println(e)
-            download(url, retry - 1)
+            download(url, name, retry - 1)
           } else {
             throw e
           }
@@ -43,11 +60,11 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     }
 
     var retryTimes = 0
-    val iter = urls.iterator
+    val iter = urlAndNames.iterator
     while (iter.hasNext) {
-      val url = iter.next()
+      val (url, name) = iter.next()
       try {
-        download(url, retry)
+        download(url, name, retry)
       } catch {
         case e: requests.RequestFailedException =>
           if (retryTimes <= retry) {
@@ -242,38 +259,47 @@ class Download(args: collection.Seq[String]) extends Command(args) {
   def yuQieShiDiLunDownload(
       name: String,
       subdir: String,
-      part: String,
       start: Int,
       end: Int,
-      getUrl: (String, Int) => List[String] = { (baseUrl, index) =>
+      getFiles: Int => List[String] = { index =>
         List(
-          f"${baseUrl}/瑜伽師地論-$index%03da.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03db.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dc.m4a"
+          f"瑜伽師地論-$index%03da.m4a",
+          f"瑜伽師地論-$index%03db.m4a",
+          f"瑜伽師地論-$index%03dc.m4a"
         )
       }
   ) = {
-    val rootDir = """/Users/wangjiong/Documents/瑜伽師地論_玅境長老"""
+    val rootDir = if (base.util.os.isWindows) {
+      """f:/瑜伽師地論_玅境長老"""
+    } else {
+      """/Users/wangjiong/Documents/瑜伽師地論_玅境長老"""
+    }
 
     new Subcommand(name) {
-      val inputDir = trailArg[String](
-        descr = "文件导入路径",
-        required = false,
-        default = Some(s"""$rootDir/$subdir""")
-      )
-
       val startIndex =
         trailArg[Int](descr = "开始下载索引", required = false, default = Some(start))
 
       val endIndex =
         trailArg[Int](descr = "终止下载索引", required = false, default = Some(end))
 
-      val baseUrl =
-        s"""https://fayun.org/public/php/download.php?file=media/釋論/瑜伽師地論・本地分/$part/audio"""
+      val inputDir = trailArg[String](
+        descr = "文件导入路径",
+        required = false,
+        default = Some(s"""$rootDir/$subdir""")
+      )
 
       def execute(): Unit = {
-        val urls = (for (index <- (startIndex() to endIndex())) yield {
-          getUrl(baseUrl, index)
+        val urlAndNames = (for (index <- (startIndex() to endIndex())) yield {
+          getFiles(index).map { it =>
+            val uri = new URI(
+              "https",
+              "fayun.org",
+              "/public/php/download.php",
+              s"file=media/釋論/瑜伽師地論・本地分/${subdir.split(".").last}/audio/$it",
+              null
+            )
+            (uri.toASCIIString, it)
+          }
         }).flatMap(_.iterator)
 
         val outputPath = Path.of(inputDir())
@@ -281,7 +307,7 @@ class Download(args: collection.Seq[String]) extends Command(args) {
           Files.createDirectories(outputPath)
         }
 
-        fetch(urls, outputPath.toString(), proxy = None)
+        fetchByUrlAndNames(urlAndNames, outputPath.toString(), proxy = None)
       }
     }
   }
@@ -298,7 +324,6 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     yuQieShiDiLunDownload(
       "yuQieShiDiLun1",
       "1.初發論端",
-      "初發論端",
       1,
       7
     )
@@ -307,7 +332,6 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     yuQieShiDiLunDownload(
       "yuQieShiDiLun2",
       "2.卷01",
-      "卷01",
       8,
       21
     )
@@ -316,7 +340,6 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     yuQieShiDiLunDownload(
       "yuQieShiDiLun3",
       "3.卷02",
-      "卷02",
       22,
       34
     )
@@ -325,127 +348,97 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     yuQieShiDiLunDownload(
       "yuQieShiDiLun4",
       "4.卷03",
-      "卷03",
       35,
       42
     )
   )
-  addSubCommand(
+
+  def yuQieShiDiLunDownload2(
+      name: String,
+      subdir: String,
+      start: Int,
+      end: Int
+  ) = {
     yuQieShiDiLunDownload(
+      name,
+      subdir,
+      start,
+      end,
+      index => {
+        List(
+          f"瑜伽師地論-$index%03d.m4a",
+          f"瑜伽師地論-$index%03dQA.m4a"
+        )
+      }
+    )
+  }
+
+  addSubCommand(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun5",
       "5.卷04",
-      "卷04",
       43,
-      47,
-      (baseUrl, index) => {
-        List(
-          f"$baseUrl/瑜伽師地論-$index%03d.m4a",
-          f"$baseUrl/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      47
     )
   )
   addSubCommand(
-    yuQieShiDiLunDownload(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun6",
       "6.卷05",
-      "卷05",
       48,
-      57,
-      (baseUrl, index) => {
-        List(
-          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      57
     )
   )
   addSubCommand(
-    yuQieShiDiLunDownload(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun7",
       "7.卷06",
-      "卷06",
       58,
-      66,
-      (baseUrl, index) => {
-        List(
-          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      66
     )
   )
   addSubCommand(
-    yuQieShiDiLunDownload(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun8",
       "8.卷07",
-      "卷07",
       67,
-      74,
-      (baseUrl, index) => {
-        List(
-          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      74
     )
   )
   addSubCommand(
-    yuQieShiDiLunDownload(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun9",
       "9.卷08",
-      "卷08",
       75,
-      84,
-      (baseUrl, index) => {
-        List(
-          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      84
     )
   )
   addSubCommand(
-    yuQieShiDiLunDownload(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun10",
       "10.卷09",
-      "卷09",
       85,
-      98,
-      (baseUrl, index) => {
-        List(
-          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      98
     )
   )
   addSubCommand(
-    yuQieShiDiLunDownload(
+    yuQieShiDiLunDownload2(
       "yuQieShiDiLun11",
       "11.卷10",
-      "卷10",
       99,
-      112,
-      (baseUrl, index) => {
-        List(
-          f"${baseUrl}/瑜伽師地論-$index%03d.m4a",
-          f"${baseUrl}/瑜伽師地論-$index%03dQA.m4a",
-        )
-      }
+      112
     )
   )
   addSubCommand(
     yuQieShiDiLunDownload(
       "yuQieShiDiLun12",
       "12.卷11",
-      "卷11",
       113,
       129,
-      (baseUrl, index) => {
+      index => {
         List(
-          f"${baseUrl}/T$index%03d.mp3",
-          f"${baseUrl}/T$index%03dQ.mp3",
+          f"T$index%03d.mp3",
+          f"T$index%03dQ.mp3"
         )
       }
     )
@@ -454,15 +447,31 @@ class Download(args: collection.Seq[String]) extends Command(args) {
     yuQieShiDiLunDownload(
       "yuQieShiDiLun13",
       "13.卷12至13-1",
-      "卷12至13-1",
       130,
       155,
-      (baseUrl, index) => {
+      index => {
         List(
-          f"${baseUrl}/T$index%03d.mp3",
-          f"${baseUrl}/T$index%03dQ.mp3",
+          f"T$index%03d.mp3",
+          f"T$index%03dQ.mp3"
         )
       }
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun14",
+      "13.卷13-2",
+      156,
+      163
+    )
+  )
+
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun15",
+      "14.卷14",
+      164,
+      183
     )
   )
 }
