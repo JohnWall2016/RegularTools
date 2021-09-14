@@ -296,7 +296,7 @@ class Download(args: collection.Seq[String]) extends Command(args) {
               "https",
               "fayun.org",
               "/public/php/download.php",
-              s"file=media/釋論/瑜伽師地論・本地分/${subdir.split(".").last}/audio/$it",
+              s"file=media/釋論/瑜伽師地論・本地分/${subdir.split("""\.""").last}/audio/$it",
               null
             )
             (uri.toASCIIString, it)
