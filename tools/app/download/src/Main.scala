@@ -466,13 +466,60 @@ class Download(args: collection.Seq[String]) extends Command(args) {
       163
     )
   )
-
   addSubCommand(
     yuQieShiDiLunDownload2(
       "yuQieShiDiLun15",
       "14.卷14",
       164,
       183
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun16",
+      "15.卷15",
+      184,
+      194
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun17",
+      "16.卷16",
+      195,
+      207
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun18",
+      "17.卷17",
+      208,
+      216
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun19",
+      "18.卷18",
+      217,
+      224
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun20",
+      "19.卷19",
+      225,
+      233
+    )
+  )
+  addSubCommand(
+    yuQieShiDiLunDownload2(
+      "yuQieShiDiLun21",
+      "20.卷20",
+      234,
+      245
     )
   )
 }
